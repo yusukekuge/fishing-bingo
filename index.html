@@ -481,15 +481,15 @@ function renderGrid() {
 
 function toggleCell(index) {
   const card = cards[currentCard];
-  card[index].stamped = !card[index].stamped;
+  if (card[index].stamped) return; // 一度開けたら戻せない
+  if (!confirm(`「${card[index].name}」を開けますか？`)) return;
+  card[index].stamped = true;
   renderGrid();
   renderTabs();
-  if (card[index].stamped) {
-    const lines = checkBingo(card);
-    if (lines.length > 0 && !bingoShownFor.has(currentCard)) {
-      bingoShownFor.add(currentCard);
-      setTimeout(() => showBingo(currentCard), 300);
-    }
+  const lines = checkBingo(card);
+  if (lines.length > 0 && !bingoShownFor.has(currentCard)) {
+    bingoShownFor.add(currentCard);
+    setTimeout(() => showBingo(currentCard), 300);
   }
 }
 
