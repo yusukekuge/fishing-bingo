@@ -75,6 +75,22 @@
   .name-input:focus { border-color: #FFD700; }
 
   .card-count-label { margin-top: 4px; }
+  .card-count-row { display: flex; gap: 10px; justify-content: center; margin-bottom: 16px; }
+  .card-name-inputs { display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px; }
+  .card-name-inputs input {
+    width: 100%;
+    padding: 10px 14px;
+    border-radius: 10px;
+    border: 2px solid rgba(255,255,255,.3);
+    background: rgba(255,255,255,.15);
+    color: #fff;
+    font-size: 1rem;
+    font-family: inherit;
+    outline: none;
+    transition: border-color .2s;
+  }
+  .card-name-inputs input::placeholder { color: rgba(255,255,255,.5); }
+  .card-name-inputs input:focus { border-color: #FFD700; }
   .card-count-row { display: flex; gap: 10px; justify-content: center; margin-bottom: 20px; }
   .card-count-row button {
     width: 56px; height: 56px;
@@ -289,10 +305,10 @@
     <div class="subtitle">ビンゴを目指して魚を釣ろう！</div>
   </div>
   <div class="player-setup">
-    <label>あなたの名前</label>
-    <input type="text" class="name-input" id="playerName" placeholder="名前を入力" maxlength="10">
-    <label class="card-count-label">カード枚数</label>
+    <label>カード枚数</label>
     <div class="card-count-row" id="countRow"></div>
+    <label>カードの名前</label>
+    <div class="card-name-inputs" id="cardNameInputs"></div>
     <button class="start-btn" onclick="startGame()">🎣 ゲームスタート！</button>
   </div>
 </div>
@@ -354,8 +370,8 @@ function generateCard() {
   return cells;
 }
 
-let playerName = '';
 let cardCount = 1;
+let cardNames = [];
 let cards = [];
 let currentCard = 0;
 let bingoShownFor = new Set();
@@ -371,6 +387,7 @@ function initSetup() {
     if (i === cardCount) btn.classList.add('selected');
     row.appendChild(btn);
   }
+  updateCardNameInputs();
 }
 
 function selectCount(n) {
@@ -378,19 +395,39 @@ function selectCount(n) {
   document.querySelectorAll('.card-count-row button').forEach((btn, idx) => {
     btn.classList.toggle('selected', idx + 1 === n);
   });
+  updateCardNameInputs();
+}
+
+function updateCardNameInputs() {
+  const container = document.getElementById('cardNameInputs');
+  const existing = container.querySelectorAll('input');
+  const existingValues = Array.from(existing).map(el => el.value);
+  container.innerHTML = '';
+  for (let i = 0; i < cardCount; i++) {
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.placeholder = cardCount === 1 ? 'あなたの名前' : `カード ${i + 1} の名前`;
+    input.value = existingValues[i] || '';
+    input.maxLength = 10;
+    container.appendChild(input);
+  }
 }
 
 // Start
 function startGame() {
-  playerName = document.getElementById('playerName').value.trim() || 'ゲスト';
+  const inputs = document.querySelectorAll('.card-name-inputs input');
+  cardNames = [];
   cards = [];
-  for (let i = 0; i < cardCount; i++) cards.push(generateCard());
+  inputs.forEach((inp, i) => {
+    cardNames.push(inp.value.trim() || `カード ${i + 1}`);
+    cards.push(generateCard());
+  });
   currentCard = 0;
   bingoShownFor = new Set();
 
   document.getElementById('setup').classList.remove('active');
   document.getElementById('game').classList.add('active');
-  document.getElementById('nameDisplay').textContent = `${playerName} のカード`;
+  document.getElementById('nameDisplay').textContent = cardNames[0];
   renderTabs();
   renderGrid();
 }
@@ -399,12 +436,13 @@ function startGame() {
 function renderTabs() {
   const container = document.getElementById('cardTabs');
   container.innerHTML = '';
+  document.getElementById('nameDisplay').textContent = cardNames[currentCard];
   if (cardCount === 1) { container.style.display = 'none'; return; }
   container.style.display = 'flex';
   for (let i = 0; i < cardCount; i++) {
     const tab = document.createElement('button');
     tab.className = 'card-tab' + (i === currentCard ? ' active' : '');
-    tab.textContent = `カード ${i + 1}`;
+    tab.textContent = cardNames[i];
     if (checkBingo(cards[i]).length > 0) tab.classList.add('bingo-achieved');
     tab.onclick = () => { currentCard = i; renderTabs(); renderGrid(); };
     container.appendChild(tab);
@@ -474,8 +512,7 @@ function checkBingo(card) {
 
 // Overlay
 function showBingo(cardIdx) {
-  const label = cardCount > 1 ? `カード ${cardIdx + 1} ` : '';
-  document.getElementById('winnerName').textContent = `${playerName} ${label}BINGO！🎉`;
+  document.getElementById('winnerName').textContent = `${cardNames[cardIdx]} BINGO！🎉`;
   document.getElementById('bingoOverlay').classList.add('show');
   if (navigator.vibrate) navigator.vibrate([200, 100, 200, 100, 200]);
 }
